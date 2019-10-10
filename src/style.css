@@ -1,0 +1,43 @@
+body{
+  background-color:rgb(29,30,34)
+}
+
+.chart{
+  background-color:rgb(232,227,227);
+  margin-top:2em;
+  padding:20px;
+  background-color: white;
+  display:flex;
+  flex-direction:column;
+  text-align:center;
+  float:left
+}
+
+#title{
+  font-size:3em;
+}
+
+#tooltip{
+  width:150px;
+  background-color:red;
+  position:absolute;
+  
+  right:0;
+  opacity:.8;
+  display:none;
+}
+
+#holder{
+  margin-top:10px;
+  margin-bottom:3em;
+}
+svg{
+ 
+}
+.bar{
+  fill:blue;
+}
+.bar:hover{
+  fill:blueviolet;
+}
+

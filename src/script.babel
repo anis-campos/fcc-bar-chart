@@ -1,0 +1,119 @@
+document.addEventListener("DOMContentLoaded", function () {
+    const req = new XMLHttpRequest();
+    req.open('GET', "https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/GDP-data.json", true);
+    req.onreadystatechange = function () {
+        let json;
+        if (req.readyState === 4 && req.status === 200) {
+            json = JSON.parse(req.responseText);
+            setData(json.data)
+        }
+    };
+    req.send();
+});
+
+const h = 500, w = 900, padding = 50;
+d3.select('#holder')
+    .append('svg')
+    .attr('width', w)
+    .attr('height', h);
+
+function setData(dataset) {
+
+    const count = dataset.length;
+
+    const maxY = d3.max(dataset, x => x[1]),
+        xDomain = [new Date(dataset[0][0]), new Date(dataset[count - 1][0])];
+
+
+    const xScale = d3.scaleTime()
+        .domain(xDomain)
+        .range([padding, w - padding]);
+
+
+    const yScale = d3.scaleLinear()
+        .domain([0, maxY])
+        .range([h - padding, padding]);
+
+    const xAxis = d3.axisBottom(xScale).tickArguments([d3.timeYear.every(5)]),
+        yAxis = d3.axisLeft(yScale).ticks(10);
+
+
+    d3.select('svg')
+        .append("g")
+        .attr('id', 'x-axis')
+        .attr("transform", `translate(0,${h - padding})`)
+        .call(xAxis);
+
+    d3.select('svg').append("g")
+        .attr('id', 'y-axis')
+        .attr("transform", `translate(${padding},0)`)
+        .call(yAxis);
+
+    const data = {tooltip: d3.select('#tooltip'), xScale, yScale};
+
+    d3.select('svg')
+        .selectAll('rect')
+        .data(dataset)
+        .enter()
+        .append('rect')
+        .attr('data-date', d => d[0])
+        .attr('data-gdp', d => d[1])
+        .attr('class', 'bar')
+        .attr('width', 4)
+        .attr('height', d => (h - padding) - yScale(d[1]))
+        .attr('x', d => xScale(new Date(d[0])))
+        .attr('y', d => yScale(d[1]))
+        .on('mouseover', handleMouseOver.bind(data))
+        .on('mouseout', handleMouseOut.bind(data));
+}
+
+const monthToQuartile = {
+    "01": "Q1",
+    "04": "Q2",
+    "07": "Q3",
+    "10": "Q4"
+};
+
+function parseDate(date) {
+    const group = date.match(/(\d{4})-(\d\d)-\d\d/);
+    if (group) {
+        const [, year, month] = group;
+        return `${year} ${monthToQuartile[month]}`
+    }
+    return "";
+}
+
+function parseMoney(money) {
+    const float = parseFloat(money);
+    return float.toLocaleString('en-US', {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1
+    })
+}
+
+
+function handleMouseOver(d) {
+    const {tooltip, yScale, xScale} = this;
+    const chartBottom = d3.select('svg').node().getBBox().height;
+    tooltip.style("display", "block");
+    tooltip.style("left", d3.event.pageX + 20 + "px");
+    tooltip.style("top", chartBottom - 30 + "px");
+    tooltip.html(`${parseDate(d[0])}<BR/>${parseMoney(d[1])} Billions`);
+    tooltip.attr('data-date', d[0]);
+
+    d3.select('svg').append('rect')
+        .attr('id', 'horizontalReticule')
+        .attr('x', padding)
+        .attr('y', yScale(d[1]))
+        .attr('height', 2)
+        .attr('fill', 'blueviolet')
+        .attr('width', xScale(new Date(d[0])) - padding);
+}
+
+function handleMouseOut() {
+    const {tooltip} = this;
+    tooltip.style("display", "none");
+    d3.select('svg').select('rect#horizontalReticule').remove()
+}
